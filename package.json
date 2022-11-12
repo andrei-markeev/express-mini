@@ -1,0 +1,13 @@
+{
+  "name": "@andrei-markeev/express-mini",
+  "version": "1.0.0",
+  "description": "",
+  "types": "express-mini.ts",
+  "main": "dist/express-mini.js",
+  "keywords": [],
+  "author": "Andrei Markeev",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^18.11.9"
+  }
+}
