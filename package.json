@@ -1,6 +1,6 @@
 {
   "name": "@andrei-markeev/express-mini",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "",
   "types": "express-mini.ts",
   "main": "dist/express-mini.js",
@@ -9,5 +9,8 @@
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^18.11.9"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
