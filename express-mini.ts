@@ -127,7 +127,7 @@ function parseRouteAndAddParamsToRequest(template: string, url: string, request:
     return template === url;
 }
 
-function getStaticFile(filePath: string, response: http.ServerResponse) {
+export function getStaticFile(filePath: string, response: http.ServerResponse) {
     var extname = String(path.extname(filePath)).toLowerCase();
     var mimeTypes: { [ext: string]: string } = {
         '.html': 'text/html',

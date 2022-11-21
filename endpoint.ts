@@ -1,4 +1,5 @@
 import { ServerResponse, IncomingMessage } from "http";
+import { getStaticFile } from "./express-mini";
 
 interface EndpointParamsBase<P> {
     userAgent: string;
@@ -37,7 +38,8 @@ export type EndpointResponse = { html: string }
     | { redirectTo: string; setCookies?: string[]; }
     | { text: string; }
     | { code?: number; }
-    | { skip: true };
+    | { staticFile: string; }
+    | { skip: true; };
 
 export function createEndpoint<B, P>(options: {
     post?: (params: PostEndpointParams<B, P>) => Promise<EndpointResponse>,
@@ -92,7 +94,9 @@ export function createEndpoint<B, P>(options: {
             return "next";
         }
 
-        if ("code" in result && result.code) {
+        if ("staticFile" in result) {
+            getStaticFile(result.staticFile, response);
+        } else if ("code" in result && result.code) {
             response.writeHead(result.code);
             response.end();
         } else if ("html" in result) {
