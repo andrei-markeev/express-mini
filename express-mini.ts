@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import url from 'url';
 import { createEndpoint, EndpointResponse, GetEndpointParams, PostEndpointParams, PreprocessedRequest } from './endpoint';
+export * from './endpoint';
 
 type Route = { template: string, endpoint: ReturnType<typeof createEndpoint> };
 

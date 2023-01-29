@@ -1,8 +1,8 @@
 {
   "name": "@andrei-markeev/express-mini",
-  "version": "0.0.2",
+  "version": "0.0.5",
   "description": "",
-  "types": "express-mini.ts",
+  "types": "dist/express-mini.d.ts",
   "main": "dist/express-mini.js",
   "keywords": [],
   "author": "Andrei Markeev",
