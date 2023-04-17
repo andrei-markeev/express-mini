@@ -18,97 +18,106 @@ export function post<P, B>(template: string, endpointFunction: (params: PostEndp
     routes.get("POST")!.push({ template, endpoint: createEndpoint({ post: endpointFunction }) })
 }
 
-function preprocessRequest(request: http.IncomingMessage, response: http.ServerResponse) {
+function createRequestListener(staticFilesFolder: string | null) {
 
-    if (request.method === "GET" && request.url === "/_health") {
-        response.writeHead(200, { 'Content-Type': 'text/plain' });
-        response.end("I'm feeling fine!");
-        return;
-    }
+    return function(request: http.IncomingMessage, response: http.ServerResponse) {
 
-    console.log(request.method, request.url);
-
-    const cookies: { [key: string]: string } = {};
-    if (request.headers.cookie) {
-        for (const cookie of request.headers.cookie.split(';')) {
-            const match = cookie.match(/^\s*([^=]+)=\s*(.*?)\s*$/);
-            if (match)
-                cookies[match[1]] = match[2];
+        if (request.method === "GET" && request.url === "/_health") {
+            response.writeHead(200, { 'Content-Type': 'text/plain' });
+            response.end("I'm feeling fine!");
+            return;
         }
-    }
-    const parsedUrl = url.parse(request.url || "/");
-    const preprocessed = request as PreprocessedRequest;
-    preprocessed.url = parsedUrl.pathname!;
-    preprocessed.query = new URLSearchParams(parsedUrl.query || "");
-    preprocessed.cookies = cookies;
-    preprocessed.body = null;
-    preprocessed.rawBody = null;
-    preprocessed.params = {};
 
-    if (request.method == 'POST') {
-        var body = '';
+        console.log(request.method, request.url);
 
-        request.on('data', function (data) {
-            body += data;
-
-            if (body.length > 100000) {
-                response.writeHead(500);
-                response.end('Internal server error');
-                request.socket.destroy();
+        const cookies: { [key: string]: string } = {};
+        if (request.headers.cookie) {
+            for (const cookie of request.headers.cookie.split(';')) {
+                const match = cookie.match(/^\s*([^=]+)=\s*(.*?)\s*$/);
+                if (match)
+                    cookies[match[1]] = match[2];
             }
-        });
+        }
+        const parsedUrl = url.parse(request.url || "/");
+        const preprocessed = request as PreprocessedRequest;
+        preprocessed.url = parsedUrl.pathname!;
+        preprocessed.query = new URLSearchParams(parsedUrl.query || "");
+        preprocessed.cookies = cookies;
+        preprocessed.body = null;
+        preprocessed.rawBody = null;
+        preprocessed.params = {};
 
-        request.on('end', function () {
-            preprocessed.rawBody = body;
-            if (request.headers["content-type"] === "application/x-www-form-urlencoded") {
-                const params = new URLSearchParams(body);
-                const bodyAsObject: Record<string, string> = {};
-                for (const [key, value] of params.entries()) {
-                    bodyAsObject[key] = value;
+        if (request.method == 'POST') {
+            var body = '';
+
+            request.on('data', function (data) {
+                body += data;
+
+                if (body.length > 100000) {
+                    response.writeHead(500);
+                    response.end('Internal server error');
+                    request.socket.destroy();
                 }
-                preprocessed.body = bodyAsObject;
-            }
-            else if (request.headers["content-type"] === "application/json")
-                preprocessed.body = JSON.parse(body);
-            else
-                preprocessed.body = body;
+            });
 
-            matchRoute(preprocessed, response);
-        });
-    } else
-        matchRoute(preprocessed, response);
+            request.on('end', function () {
+                preprocessed.rawBody = body;
+                if (request.headers["content-type"] === "application/x-www-form-urlencoded") {
+                    const params = new URLSearchParams(body);
+                    const bodyAsObject: Record<string, string> = {};
+                    for (const [key, value] of params.entries()) {
+                        bodyAsObject[key] = value;
+                    }
+                    preprocessed.body = bodyAsObject;
+                }
+                else if (request.headers["content-type"] === "application/json")
+                    preprocessed.body = JSON.parse(body);
+                else
+                    preprocessed.body = body;
+
+                serveStaticFileOrRoute(staticFilesFolder, preprocessed, response);
+            });
+        } else
+            serveStaticFileOrRoute(staticFilesFolder, preprocessed, response);
+    }
+
 }
 
-function matchRoute(request: PreprocessedRequest, response: http.ServerResponse) {
+function serveStaticFileOrRoute(staticFilesFolder: string | null, request: PreprocessedRequest, response: http.ServerResponse) {
     const url = request.url;
     if (!url)
         return;
 
-    console.log(request.query);
-    console.log(request.body);
-
-    var filePath = './public/' + url.replace(/^[\.\/\\]+/, "");
-    if (filePath.endsWith('/')) {
-        filePath += 'index.html';
-    }
-    fs.access(filePath, fs.constants.F_OK, async (err) => {
-        if (!err)
-            return getStaticFile(filePath, response);
-
-        const method = request.method || "GET";
-        const routesByMethod = routes.get(method) || [];
-        for (const route of routesByMethod) {
-            if (parseRouteAndAddParamsToRequest(route.template, url, request)) {
-                const result = await route.endpoint(request, response);
-                if (result === "handled")
-                    return;
-            }
+    if (staticFilesFolder) {
+        var filePath = staticFilesFolder + url.replace(/^[\.\/\\]+/, "");
+        if (filePath.endsWith('/')) {
+            filePath += 'index.html';
         }
+        fs.access(filePath, fs.constants.F_OK, (err) => {
+            if (!err)
+                return getStaticFile(filePath, response);
 
-        response.writeHead(404, { 'Content-Type': 'text/plain' });
-        response.end("Not found");
-    });
+            matchRoute(request, response);
+        });
+    } else
+        matchRoute(request, response);
 
+
+}
+
+async function matchRoute(request: PreprocessedRequest, response: http.ServerResponse) {
+    const method = request.method || "GET";
+    const routesByMethod = routes.get(method) || [];
+    for (const route of routesByMethod) {
+        if (parseRouteAndAddParamsToRequest(route.template, request.url!, request)) {
+            const result = await route.endpoint(request, response);
+            if (result === "handled")
+                return;
+        }
+    }
+
+    response.writeHead(404, { 'Content-Type': 'text/plain' });
+    response.end("Not found");
 }
 
 function parseRouteAndAddParamsToRequest(template: string, url: string, request: PreprocessedRequest) {
@@ -160,7 +169,7 @@ export function getStaticFile(filePath: string, response: http.ServerResponse) {
 
 }
 
-export function listen(port: number, callback?: () => void) {
-    return http.createServer(preprocessRequest)
+export function listen(port: number, staticFilesFolder: string | null, callback?: () => void) {
+    return http.createServer(createRequestListener(staticFilesFolder))
         .listen(port, callback);
 }
