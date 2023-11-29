@@ -47,7 +47,6 @@ export function createEndpoint<B, P>(options: {
 }) {
     return async function (request: PreprocessedRequest, response: ServerResponse): Promise<"handled" | "next"> {
         const now = Date.now();
-        console.time("Endpoint-" + now);
 
         const host = request.headers.host!;
         const userAgent = request.headers["user-agent"] || "";
@@ -62,14 +61,12 @@ export function createEndpoint<B, P>(options: {
 
         let result;
         try {
-            console.time("Handler-" + now);
             if (request.method === "POST" && options.post)
                 result = await options.post({ params, headers, cookies, body, rawBody, userAgent, host, url });
             else if (request.method === "GET" && options.get)
                 result = await options.get({ params, headers, cookies, query, userAgent, host, url });
             else
                 result = { code: 400 };
-            console.timeEnd("Handler-" + now);
         } catch (e) {
             let code = 500;
             let message = "Internal server error";
@@ -84,13 +81,10 @@ export function createEndpoint<B, P>(options: {
 
             response.writeHead(code, headers);
             response.end(message);
-            console.timeEnd("Handler-" + now);
-            console.timeEnd("Endpoint-" + now);
             return "handled";
         }
 
         if ("skip" in result && result.skip) {
-            console.timeEnd("Endpoint-" + now);
             return "next";
         }
 
@@ -119,7 +113,6 @@ export function createEndpoint<B, P>(options: {
             response.writeHead(204);
             response.end();
         }
-        console.timeEnd("Endpoint-" + now);
         return "handled";
     }
 }

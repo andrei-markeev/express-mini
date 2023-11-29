@@ -28,8 +28,6 @@ function createRequestListener(staticFilesFolder: string | null) {
             return;
         }
 
-        console.log(request.method, request.url);
-
         const cookies: { [key: string]: string } = {};
         if (request.headers.cookie) {
             for (const cookie of request.headers.cookie.split(';')) {
