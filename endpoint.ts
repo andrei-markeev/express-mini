@@ -37,6 +37,7 @@ type StringValues<T> = {
 export type EndpointResponse = { html: string }
     | { redirectTo: string; setCookies?: string[]; }
     | { text: string; }
+    | { json: string }
     | { code?: number; }
     | { staticFile: string; }
     | { skip: true; };
@@ -99,6 +100,9 @@ export function createEndpoint<B, P>(options: {
         } else if ("text" in result) {
             response.writeHead(200, { "Content-Type": "text/plain" });
             response.end(result.text);
+        } else if ("json" in result) {
+            response.writeHead(200, { "Content-Type": "application/json" });
+            response.end(result.json);
         } else if ("redirectTo" in result) {
 
             const headers: any = { "Location": result.redirectTo };

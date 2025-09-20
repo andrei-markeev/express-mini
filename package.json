@@ -1,6 +1,6 @@
 {
   "name": "@andrei-markeev/express-mini",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "",
   "types": "dist/express-mini.d.ts",
   "main": "dist/express-mini.js",
@@ -8,7 +8,7 @@
   "author": "Andrei Markeev",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^18.11.9"
+    "@types/node": "^22.18.6"
   },
   "scripts": {
     "prepare": "tsc"
