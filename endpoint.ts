@@ -102,7 +102,7 @@ export function createEndpoint<B, P>(options: {
             response.end(result.text);
         } else if ("json" in result) {
             response.writeHead(200, { "Content-Type": "application/json" });
-            response.end(result.json);
+            response.end(JSON.stringify(result.json));
         } else if ("redirectTo" in result) {
 
             const headers: any = { "Location": result.redirectTo };
